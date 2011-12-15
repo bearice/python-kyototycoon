@@ -544,7 +544,33 @@ class ProtocolHandler:
 
         self.err.set_success()
         return True
-
+        
+    def play_script(self, name, kv_dict=None):
+        if not kv_dict: 
+            kv_dict = {}
+        if not isinstance(kv_dict, dict):
+            return False
+        
+        url = '/rpc/play_script'
+        request_body = "name \t" + urllib.quote(name, safe='') + '\n'
+        for k, v in kv_dict.items():
+            k = urllib.quote(k, safe='')
+            v = urllib.quote(v, safe='')
+            request_body += '_' + k + '\t' + v + '\n'
+        self.conn.request('POST', url, body=request_body,
+                          headers=KT_HTTP_HEADER)
+        res = self.conn.getresponse()
+        body = res.read()
+        if res.status != 200:
+            self.err.set_error(self.err.EMISC)
+            return False
+        self.err.set_success()
+        res_dict = self._tsv_to_dict(body)
+        rv = {}
+        for k in res_dict.keys():
+            rv[k[1:]] = res_dict[k]
+        return rv;
+    
     def count(self, db=None):
         st = self.status(db)
         if st is None:
